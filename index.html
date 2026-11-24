@@ -135,6 +135,7 @@ button:focus-visible { outline: 2px solid var(--beak); outline-offset: 2px; }
       <li>Seagulls need a <b>Chip Bin</b>. Moths need a <b>Strip Light</b>. Give them room or they get grumpy.</li>
       <li>Guests come in through the fire exit, pay &pound;6 and wander to exhibits. Happy animals mean a better rating and more guests.</li>
       <li>Hungry seagulls with no chip bin will rob the guests.</li>
+      <li>The <b>Wild Darren</b> exhibit holds Test Bay&rsquo;s IT Technician. He lives on Server Room carpet and needs a <b>Coffee Machine</b>. There is only one Darren.</li>
       <li>Drag to pan (right-drag while painting), scroll or pinch to zoom, arrow keys/WASD also pan. Esc returns to Inspect.</li>
     </ul>
     <button id="helpClose">Open the zoo</button>
@@ -147,7 +148,9 @@ button:focus-visible { outline: 2px solid var(--beak); outline-offset: 2px; }
 const POUND = '£';
 const TW = 64, TH = 32, MW = 22, MH = 16, WALL_H = 100;
 const ENTRANCE = { x: 0, y: 7 };
-const T = { FLOOR: 0, BEACH: 1, DARK: 2 };
+const T = { FLOOR: 0, BEACH: 1, DARK: 2, IT: 3 };
+const TERRAIN_NAME = ['the office floor', 'Shingle Beach', 'Dark Corner', 'Server Room carpet'];
+const IT_LINES = ['Have you tried turning it off and on again?', 'Is it plugged in?', 'Raise a ticket.', 'That\u2019s a known issue.', 'Works on my machine.', 'Who unplugged the switch?', 'Did you restart it though?'];
 const DAY_LEN = 60;
 
 const OBJ = {
@@ -157,29 +160,37 @@ const OBJ = {
   dave:  { name: 'Mini Dave', cost: 30, on: T.FLOOR, block: true, decor: 6 },
   bin:   { name: 'Chip Bin', cost: 80, on: T.BEACH, block: false, food: 'gull' },
   lamp:  { name: 'Strip Light', cost: 50, on: T.DARK, block: false, food: 'moth' },
+  coffee: { name: 'Coffee Machine', cost: 90, on: T.IT, block: false, food: 'darren' },
+  rack:  { name: 'Server Rack', cost: 150, on: T.IT, block: false, decor: 4 },
 };
 const SPECIES = {
   gull: { name: 'Seagull', cost: 150, habitat: T.BEACH, food: 'bin', space: 4, upkeep: 3, hungerRate: 1.3, speed: 1.3,
-    names: ['Steve', 'Gary', 'Big Sandra', 'Kevin', 'Brenda', 'Chips', 'Darren', 'Pam', 'Squawkins', 'Nigel'] },
+    names: ['Steve', 'Gary', 'Big Sandra', 'Kevin', 'Brenda', 'Chips', 'Wayne', 'Pam', 'Squawkins', 'Nigel'] },
   moth: { name: 'Moth', cost: 60, habitat: T.DARK, food: 'lamp', space: 2, upkeep: 1, hungerRate: 0.9, speed: 1.6,
     names: ['Dusty', 'Mothew', 'Cardigan', 'Lumen', 'Tim', 'Flick', 'Wool Thief', 'Bulb', 'Sheila', 'Fuzz'] },
+  darren: { name: 'IT Technician', cost: 400, habitat: T.IT, food: 'coffee', space: 6, upkeep: 5, hungerRate: 1.0, speed: 0.9, unique: true,
+    names: ['Darren'] },
 };
 const TOOLS = [
   { group: '', items: [{ id: 'inspect', label: 'Inspect', desc: 'Click animals, guests or objects to see how they are doing.' }] },
   { group: 'Habitats', items: [
     { id: 't_beach', label: 'Shingle Beach', cost: 10, desc: 'Paint seagull habitat. Drag to paint.', paint: true },
-    { id: 't_dark', label: 'Dark Corner', cost: 10, desc: 'Paint moth habitat. Drag to paint.', paint: true } ] },
+    { id: 't_dark', label: 'Dark Corner', cost: 10, desc: 'Paint moth habitat. Drag to paint.', paint: true },
+    { id: 't_it', label: 'Server Room', cost: 15, desc: 'Paint Darren habitat: grey carpet tiles. Drag to paint.', paint: true } ] },
   { group: 'Animals', items: [
     { id: 'a_gull', label: 'Seagull', cost: 150, desc: 'Place on Shingle Beach. Needs a Chip Bin and 4 tiles of space.' },
-    { id: 'a_moth', label: 'Moth', cost: 60, desc: 'Place on Dark Corner. Needs a Strip Light and 2 tiles of space.' } ] },
+    { id: 'a_moth', label: 'Moth', cost: 60, desc: 'Place on Dark Corner. Needs a Strip Light and 2 tiles of space.' },
+    { id: 'a_darren', label: 'Wild Darren', cost: 400, desc: 'The only IT Technician in captivity. Place in a Server Room. Needs a Coffee Machine and 6 tiles of space.' } ] },
   { group: 'Animal care', items: [
     { id: 'o_bin', label: 'Chip Bin', cost: 80, desc: 'Seagull food. Place on Shingle Beach. ' + POUND + '2 per feed.' },
-    { id: 'o_lamp', label: 'Strip Light', cost: 50, desc: 'Moths circle it. Place on Dark Corner. ' + POUND + '1 per visit.' } ] },
+    { id: 'o_lamp', label: 'Strip Light', cost: 50, desc: 'Moths circle it. Place on Dark Corner. ' + POUND + '1 per visit.' },
+    { id: 'o_coffee', label: 'Coffee Machine', cost: 90, desc: 'Darren fuel. Place in a Server Room. ' + POUND + '1 per cup.' } ] },
   { group: 'Scenery', items: [
     { id: 'o_shelf', label: 'Shelving', cost: 120, desc: 'Racking full of boxes. Guests like a proper Test Bay look.' },
     { id: 'o_desk', label: 'Build Desk', cost: 100, desc: 'Desk with a monitor. Place on floor.' },
     { id: 'o_boxes', label: 'Box Mountain', cost: 40, desc: 'A pile of deliveries nobody has unpacked.' },
-    { id: 'o_dave', label: 'Mini Dave', cost: 30, desc: 'The pink step stool. Beloved by all.' } ] },
+    { id: 'o_dave', label: 'Mini Dave', cost: 30, desc: 'The pink step stool. Beloved by all.' },
+    { id: 'o_rack', label: 'Server Rack', cost: 150, desc: 'Blinking lights for the Server Room. Darren likes to tinker with it.' } ] },
   { group: '', items: [{ id: 'bulldoze', label: 'Bulldoze', desc: 'Remove objects, release animals, or turn habitat back into floor. Drag to clear.', paint: true }] },
 ];
 const TOOL_BY_ID = {};
@@ -213,10 +224,13 @@ function newGame() {
   setObj('dave', 10, 6);
   for (let x = 14; x <= 19; x++) for (let y = 11; y <= 14; y++) terrain[y][x] = T.BEACH;
   for (let x = 2; x <= 6; x++) for (let y = 10; y <= 14; y++) terrain[y][x] = T.DARK;
+  for (let x = 15; x <= 19; x++) for (let y = 4; y <= 7; y++) terrain[y][x] = T.IT;
   setObj('bin', 16, 12); setObj('lamp', 4, 12);
+  setObj('coffee', 15, 4); setObj('rack', 18, 4); setObj('rack', 19, 4);
   recompute();
   addAnimal('gull', 15, 11, 'Steve'); addAnimal('gull', 18, 13, 'Gary');
   addAnimal('moth', 3, 11, 'Dusty'); addAnimal('moth', 5, 13, 'Mothew'); addAnimal('moth', 3, 14, 'Cardigan');
+  addAnimal('darren', 17, 6, 'Darren');
 }
 function setObj(type, x, y) { objs[y][x] = { type, x, y }; }
 
@@ -330,10 +344,12 @@ function animalMood(a) {
   const sp = SPECIES[a.sp], n = animalNeeds(a);
   let target = 50;
   const notes = [];
-  if (n.food) target += 22; else notes.push(a.sp === 'gull' ? 'No chip bin. Eyeing the guests.' : 'No strip light. Bumping into monitors.');
-  if (a.hunger > 70) { target -= 25; notes.push('Starving.'); }
+  const isD = a.sp === 'darren';
+  if (n.food) target += 22; else notes.push(a.sp === 'gull' ? 'No chip bin. Eyeing the guests.' : isD ? 'No coffee machine. Running on fumes.' : 'No strip light. Bumping into monitors.');
+  if (a.hunger > 70) { target -= 25; notes.push(isD ? 'Desperately needs a coffee.' : 'Starving.'); }
   if (n.space >= sp.space) target += 15; else { target -= 30 * (1 - n.space / sp.space); notes.push('Too crowded in here.'); }
-  if (n.friends > 0) target += 8; else notes.push('A bit lonely.');
+  if (n.friends > 0 || isD) target += 8; else notes.push('A bit lonely.');
+  if (!notes.length && isD) notes.push(pick(['Enjoying the peace and quiet.', 'Nobody has raised a ticket in ages.', 'The server room is the right temperature.']));
   if (!notes.length) notes.push(a.sp === 'gull' ? pick(['Living the seaside life.', 'This shingle is top tier.', 'Chips. Again. Lovely.']) : pick(['That light is mesmerising.', 'Found a nice jumper earlier.', 'So cosy in the dark.']));
   return { target: clamp(target, 0, 100), notes, n };
 }
@@ -366,7 +382,8 @@ function updateAnimal(a, dt) {
   if (a.state === 'walk') {
     if (stepPath(a, sp.speed * (a.sp === 'gull' && a.food ? 1.5 : 1), dt)) {
       if (a.food) {
-        a.state = 'eat'; a.t = a.sp === 'gull' ? 3 : 5;
+        a.state = 'eat'; a.t = a.sp === 'gull' ? 3 : a.sp === 'darren' ? 4 : 5;
+        if (a.sp === 'darren') { a.say = pick(['Ahh, coffee.', 'Right. Now I can think.', 'Third one today.']); a.sayT = 2.4; }
         a.hunger = 0; money -= a.sp === 'gull' ? 2 : 1;
         if (a.sp === 'gull' && Math.random() < 0.3) { a.say = pick(['MINE!', 'Chips!', 'Kyow!']); a.sayT = 2; }
         a.ang = Math.random() * 6.28;
@@ -383,7 +400,7 @@ function updateAnimal(a, dt) {
     const path = bfs(Math.floor(a.x), Math.floor(a.y), (x, y) => x === best.x && y === best.y, pass);
     if (path) {
       a.path = path; a.food = best; a.state = 'walk';
-      a.offX = a.sp === 'gull' ? rnd(-0.38, 0.38) : 0; a.offY = a.sp === 'gull' ? 0.36 : 0;
+      a.offX = a.sp === 'gull' ? rnd(-0.38, 0.38) : a.sp === 'darren' ? 0.1 : 0; a.offY = a.sp === 'gull' ? 0.36 : a.sp === 'darren' ? 0.4 : 0;
       if (!path.length) { a.path = [{ x: best.x, y: best.y }]; }
       return;
     }
@@ -395,6 +412,7 @@ function updateAnimal(a, dt) {
     a.offX = rnd(-0.3, 0.3); a.offY = rnd(-0.3, 0.3);
   } else a.t = rnd(0.5, 2);
   if (a.sp === 'gull' && Math.random() < 0.06) { a.say = pick(['Kyow!', 'Ha-ha-ha!', 'Squawk']); a.sayT = 1.6; }
+  if (a.sp === 'darren' && Math.random() < 0.12) { a.say = pick(IT_LINES); a.sayT = 2.6; }
 }
 
 const SHIRTS = ['#e85d4a', '#2f7de1', '#3fae6a', '#f2b632', '#8a5cd1', '#ef7fb0', '#41b8c4', '#f4f4f0', '#3b3f46'];
@@ -495,6 +513,16 @@ function lookAt(gs) {
       return;
     }
     gs.say = avg > 60 ? pick(['Proper seaside vibes', 'Look at his little face', 'He’s staring at my sandwich']) : pick(['That gull looks miserable', 'Bit cramped in there']);
+  } else if (sp === 'darren') {
+    const d = here[0];
+    if (d.hunger > 60 && !info.foods.length && Math.random() < 0.6) {
+      d.hunger = 10; d.say = 'I\u2019ll just borrow this.'; d.sayT = 2.5;
+      gs.happy = clamp(gs.happy - 20, 0, 100); gs.say = 'He drank my tea!'; gs.sayT = 3;
+      log('Darren drank a guest\u2019s tea. Build a Coffee Machine.', 'bad');
+      return;
+    }
+    if (Math.random() < 0.35) { d.say = pick(IT_LINES); d.sayT = 2.6; }
+    gs.say = avg > 60 ? pick(['A Darren in the wild!', 'Can he fix my laptop?', 'Look, he\u2019s rebooting something', 'So majestic']) : pick(['He looks like he needs a coffee', 'Is he OK?']);
   } else {
     gs.say = avg > 60 ? pick(['So many moths!', 'They love that light', 'Strangely beautiful']) : pick(['Are those moths OK?', 'It’s just dark in there']);
   }
@@ -545,25 +573,27 @@ function check(toolId, x, y) {
   if (toolId === 'bulldoze') return { ok: !!o || ter !== T.FLOOR || animalsOnTile(x, y).length > 0 };
   if (protectedTile(x, y)) return { ok: false, why: 'Keep the fire exit clear.' };
   if (t.cost > money) return { ok: false, why: 'Not enough funds.' };
-  if (toolId === 't_beach' || toolId === 't_dark') {
-    const want = toolId === 't_beach' ? T.BEACH : T.DARK;
+  if (toolId === 't_beach' || toolId === 't_dark' || toolId === 't_it') {
+    const want = PAINT[toolId];
     if (ter === want) return { ok: false };
     if (o) return { ok: false, why: 'Clear the ' + OBJ[o.type].name + ' first.' };
     if (animalsOnTile(x, y).length) return { ok: false, why: 'An animal is standing there.' };
     if (guests.some(gs => Math.floor(gs.x) === x && Math.floor(gs.y) === y)) return { ok: false, why: 'A guest is standing there.' };
     return { ok: true };
   }
-  if (toolId === 'a_gull' || toolId === 'a_moth') {
-    const sp = SPECIES[toolId.slice(2)];
-    if (ter !== sp.habitat) return { ok: false, why: sp.name + 's go on ' + (sp.habitat === T.BEACH ? 'Shingle Beach.' : 'Dark Corner.') };
+  if (toolId.startsWith('a_')) {
+    const key = toolId.slice(2), sp = SPECIES[key];
+    if (sp.unique && animals.some(a => a.sp === key)) return { ok: false, why: 'There is only one Darren.' };
+    if (ter !== sp.habitat) return { ok: false, why: (sp.unique ? 'Darren lives' : sp.name + 's go') + ' on ' + TERRAIN_NAME[sp.habitat] + '.' };
     return { ok: true };
   }
   const type = toolId.slice(2), def = OBJ[type];
   if (o) return { ok: false, why: 'Something is already there.' };
-  if (ter !== def.on) return { ok: false, why: def.name + ' goes on ' + (def.on === T.FLOOR ? 'the office floor.' : def.on === T.BEACH ? 'Shingle Beach.' : 'Dark Corner.') };
+  if (ter !== def.on) return { ok: false, why: def.name + ' goes on ' + TERRAIN_NAME[def.on] + '.' };
   if (def.block && guests.some(gs => Math.floor(gs.x) === x && Math.floor(gs.y) === y)) return { ok: false, why: 'A guest is standing there.' };
   return { ok: true };
 }
+const PAINT = { t_beach: T.BEACH, t_dark: T.DARK, t_it: T.IT };
 function animalsOnTile(x, y) { return animals.filter(a => Math.floor(a.x) === x && Math.floor(a.y) === y); }
 function spend(c, x, y) { money -= c; floaters.push({ x: x + 0.5, y: y + 0.5, z: 30, text: '-' + POUND + c, t: 1.2, col: '#ff9a8b' }); }
 
@@ -582,13 +612,13 @@ function apply(toolId, x, y, fromClick) {
     } else { terrain[y][x] = T.FLOOR; afterTerrainChange(); }
     return true;
   }
-  if (toolId === 't_beach' || toolId === 't_dark') {
-    terrain[y][x] = toolId === 't_beach' ? T.BEACH : T.DARK; spend(t.cost, x, y); afterTerrainChange(); return true;
+  if (PAINT[toolId] !== undefined) {
+    terrain[y][x] = PAINT[toolId]; spend(t.cost, x, y); afterTerrainChange(); return true;
   }
-  if (toolId === 'a_gull' || toolId === 'a_moth') {
+  if (toolId.startsWith('a_')) {
     const sp = toolId.slice(2);
     const a = addAnimal(sp, x, y); spend(t.cost, x, y);
-    log(a.name + ' the ' + SPECIES[sp].name.toLowerCase() + ' has joined the zoo.', 'good');
+    log(sp === 'darren' ? 'A wild Darren has appeared! He\u2019s already asking for the Wi-Fi password.' : a.name + ' the ' + SPECIES[sp].name.toLowerCase() + ' has joined the zoo.', 'good');
     return true;
   }
   setObj(toolId.slice(2), x, y); spend(t.cost, x, y); afterTerrainChange();
@@ -657,6 +687,10 @@ function drawTile(x, y) {
       ellipse(sx, sy, 2 + hash(x, y, i + 40) * 2, 1 + hash(x, y, i + 40), ['#a89a84', '#bfb3a1', '#8f8678', '#e9e2d3'][i % 4]);
     }
     if (hash(x, y, 77) > 0.85) { const [sx, sy] = P(x + 0.5, y + 0.5); g.strokeStyle = '#f7f3ea'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - 5, sy); g.quadraticCurveTo(sx, sy - 4, sx + 5, sy); g.stroke(); }
+  } else if (t === T.IT) {
+    poly(pts, (x + y) % 2 ? '#56616d' : '#4b5560', 'rgba(30,36,44,0.5)');
+    for (let i = 0; i < 6; i++) { const [sx, sy] = P(x + hash(x, y, i + 1), y + hash(x, y, i + 9)); g.fillStyle = i % 2 ? 'rgba(150,170,185,0.35)' : 'rgba(20,25,30,0.4)'; g.fillRect(sx, sy, 1.4, 1.2); }
+    if (hash(x, y, 55) > 0.8) { const [sx, sy] = P(x + 0.3, y + 0.6); g.strokeStyle = '#2f6fd0'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(sx - 8, sy); g.bezierCurveTo(sx - 2, sy - 6, sx + 2, sy + 5, sx + 10, sy - 2); g.stroke(); }
   } else {
     poly(pts, v > 0.5 ? '#2c2f3e' : '#292c3a');
     for (let i = 0; i < 4; i++) { const [sx, sy] = P(x + hash(x, y, i + 1), y + hash(x, y, i + 9)); g.fillStyle = 'rgba(120,110,150,0.25)'; g.fillRect(sx, sy, 2, 1); }
@@ -788,11 +822,38 @@ function drawLamp(tx, ty) {
   grd = g.createRadialGradient(cx, cy - 55, 2, cx, cy - 55, 50); grd.addColorStop(0, 'rgba(255,250,215,0.55)'); grd.addColorStop(1, 'rgba(255,250,215,0)');
   g.fillStyle = grd; g.beginPath(); g.arc(cx, cy - 55, 50, 0, 7); g.fill(); g.restore();
 }
+function drawRack(tx, ty) {
+  const x0 = tx + 0.18, y0 = ty + 0.22, sx = 0.64, sy = 0.56, fy = y0 + sy;
+  box(x0, y0, 0, sx, sy, 92, '#1c2026');
+  for (let k = 0; k < 9; k++) {
+    const z = 8 + k * 9.2;
+    poly([P(x0 + 0.04, fy, z), P(x0 + sx - 0.04, fy, z), P(x0 + sx - 0.04, fy, z + 6.5), P(x0 + 0.04, fy, z + 6.5)], k % 3 === 1 ? '#3a414b' : '#2b3038');
+    for (let l = 0; l < 3; l++) {
+      const on = Math.sin(time * (2 + hash(tx, ty, k * 3 + l) * 9) + k + l * 2) > -0.2;
+      const [sx2, sy2] = P(x0 + sx - 0.1 - l * 0.06, fy, z + 3.2);
+      g.fillStyle = on ? (hash(tx, ty, k + l * 13) > 0.8 ? '#ffb02e' : '#4cff7a') : '#18321f';
+      g.fillRect(sx2 - 1, sy2 - 1, 2, 2);
+    }
+  }
+  lineW(P(x0 + 0.06, fy, 4), P(x0 + 0.06, fy, 88), '#5d6672', 1.5);
+}
+function drawCoffee(tx, ty) {
+  box(tx + 0.22, ty + 0.28, 0, 0.56, 0.44, 30, '#8a8f98');
+  box(tx + 0.3, ty + 0.34, 30, 0.4, 0.3, 28, '#25272b');
+  poly([P(tx + 0.36, ty + 0.64, 40), P(tx + 0.62, ty + 0.64, 40), P(tx + 0.62, ty + 0.64, 54), P(tx + 0.36, ty + 0.64, 54)], '#3c4048');
+  { const [sx, sy] = P(tx + 0.4, ty + 0.64, 50); ellipse(sx, sy, 1.6, 1.6, Math.sin(time * 3) > 0 ? '#ff4a3a' : '#7a1d16'); }
+  const [cx, cy] = P(tx + 0.5, ty + 0.66, 30);
+  cyl(cx, cy, 3.5, 6, '#f4f2ec');
+  g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1.2;
+  for (let i = 0; i < 2; i++) { const o = (time * 12 + i * 8) % 16; g.beginPath(); g.moveTo(cx - 1 + i * 2, cy - 8 - o); g.quadraticCurveTo(cx + 3 - i * 2, cy - 11 - o, cx - 1 + i * 2, cy - 14 - o); g.stroke(); }
+  textOnX('COFFEE', tx + 0.32, ty + 0.72, 22, 6, '#20242a');
+}
 function drawObj(o) {
-  ({ shelf: drawShelf, desk: drawDesk, boxes: drawBoxes, dave: drawDave, bin: drawBin, lamp: drawLamp })[o.type](o.x, o.y);
+  ({ shelf: drawShelf, desk: drawDesk, boxes: drawBoxes, dave: drawDave, bin: drawBin, lamp: drawLamp, rack: drawRack, coffee: drawCoffee })[o.type](o.x, o.y);
 }
 
 function drawFence(ax, ay, bx, by, kind) {
+  if (kind === T.IT) return drawTapeFence(ax, ay, bx, by);
   const post = kind === T.BEACH ? '#8b6a44' : '#c3cad1', rope = kind === T.BEACH ? '#efe3c3' : '#b23a48';
   const pts = [0, 0.5, 1].map(t => [ax + (bx - ax) * t, ay + (by - ay) * t]);
   for (let i = 0; i < 2; i++) {
@@ -808,7 +869,50 @@ function drawFence(ax, ay, bx, by, kind) {
   }
 }
 
+function drawTapeFence(ax, ay, bx, by) {
+  const a = P(ax, ay, 16), b = P(bx, by, 16);
+  lineW(a, b, '#f2c230', 3);
+  g.setLineDash([4, 4]); lineW(a, b, '#1b1b1b', 3); g.setLineDash([]);
+  for (const [x, y] of [[ax, ay], [bx, by]]) {
+    const [sx, sy] = P(x, y); ellipse(sx, sy, 4, 2, '#3a3d42');
+    g.fillStyle = '#f2c230'; g.fillRect(sx - 1.4, sy - 19, 2.8, 19);
+    g.fillStyle = '#1b1b1b'; g.fillRect(sx - 1.4, sy - 15, 2.8, 3); g.fillRect(sx - 1.4, sy - 8, 2.8, 3);
+  }
+}
+
 // ---------- creatures ----------
+function drawDarren(sx, sy, a, t) {
+  const moving = a && a.state === 'walk', eating = a && a.state === 'eat', face = a ? a.face : 1;
+  const step = moving ? Math.sin(t * 9) * 2 : 0;
+  ellipse(sx, sy, 8, 3.5, 'rgba(0,0,0,0.22)');
+  g.save(); g.translate(sx, sy); g.scale(face, 1);
+  g.fillStyle = '#34507a';
+  g.fillRect(-4, -12 + Math.max(0, step), 3.5, 12 - Math.max(0, step)); g.fillRect(0.5, -12 + Math.max(0, -step), 3.5, 12 - Math.max(0, -step));
+  g.fillStyle = '#f2f2f2'; g.fillRect(-5, -1.5, 5, 2); g.fillRect(0.5, -1.5, 5, 2);
+  g.fillStyle = '#2b2f36'; g.beginPath(); g.roundRect(-7, -28, 14, 17, 4); g.fill();
+  g.fillStyle = '#3b414a'; g.fillRect(-4, -18, 8, 4);
+  g.strokeStyle = '#ffc83a'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(-3, -28); g.lineTo(0, -21); g.lineTo(3, -28); g.stroke();
+  g.fillStyle = '#ffffff'; g.fillRect(-2, -22, 4, 5); g.fillStyle = '#2f6fd0'; g.fillRect(-2, -22, 4, 1.5);
+  g.fillStyle = '#22252b'; g.beginPath(); g.arc(-1, -29, 6.5, Math.PI * 0.85, Math.PI * 2.15); g.fill();
+  ellipse(0, -33, 5, 5.2, '#efc6a4');
+  g.beginPath(); g.arc(0, -34, 5.3, Math.PI * 1.05, Math.PI * 1.95); g.fillStyle = '#5a3c22'; g.fill();
+  g.beginPath(); g.ellipse(0.5, -29.5, 4, 2.6, 0, 0, Math.PI); g.fillStyle = '#6b4a2e'; g.fill();
+  g.strokeStyle = '#111'; g.lineWidth = 0.9; g.strokeRect(0.5, -35, 2.6, 2); g.strokeRect(3.6, -35, 1.8, 2);
+  g.strokeStyle = '#111'; g.lineWidth = 1.2; g.beginPath(); g.arc(0, -34, 5.8, Math.PI * 1.1, Math.PI * 1.95); g.stroke();
+  g.beginPath(); g.moveTo(-5.4, -33); g.quadraticCurveTo(-3, -28, 2, -29.5); g.stroke();
+  if (eating) {
+    g.fillStyle = '#2b2f36'; g.fillRect(3, -27, 3, 5);
+    g.fillStyle = '#f4f2ec'; g.fillRect(4, -31, 4, 5); g.fillStyle = '#d8433a'; g.fillRect(4, -30, 4, 1.2);
+  } else {
+    g.fillStyle = '#2b2f36'; g.fillRect(3, -22, 4, 4);
+    g.save(); g.translate(5, -21); g.transform(1, -0.35, 0, 1, 0, 0);
+    g.fillStyle = '#9aa3ad'; g.fillRect(0, 0, 10, 1.8);
+    g.fillStyle = '#c3cad1'; g.fillRect(0, -7, 1.6, 7);
+    g.fillStyle = Math.sin(t * 4) > 0 ? '#5aa9ff' : '#3b86e0'; g.fillRect(-0.6, -6.2, 1, 5.4);
+    g.restore();
+  }
+  g.restore();
+}
 function drawGull(sx, sy, a, t) {
   const walking = a && a.state === 'walk', eating = a && a.state === 'eat', face = a ? a.face : 1;
   ellipse(sx, sy, 9, 3.5, 'rgba(0,0,0,0.2)');
@@ -894,7 +998,7 @@ function render() {
     const [sx, sy] = P(a.x, a.y);
     list.push({ d: a.x + a.y + (a.sp === 'moth' ? 0.3 : 0), f: () => {
       if (selected && selected.ref === a) selRing(sx, sy);
-      a.sp === 'gull' ? drawGull(sx, sy, a, time + a.phase) : drawMoth(sx, sy, a.z, a, time);
+      a.sp === 'gull' ? drawGull(sx, sy, a, time + a.phase) : a.sp === 'darren' ? drawDarren(sx, sy, a, time + a.phase) : drawMoth(sx, sy, a.z, a, time);
     } });
   }
   for (const gs of guests) {
@@ -911,13 +1015,14 @@ function render() {
     poly(pts, r.ok ? 'rgba(126,227,154,0.25)' : 'rgba(255,122,107,0.25)', r.ok ? '#7ee39a' : '#ff7a6b', 2);
     if (r.ok && tool.startsWith('o_')) { g.globalAlpha = 0.6; drawObj({ type: tool.slice(2), x: hover.x, y: hover.y }); g.globalAlpha = 1; }
     if (r.ok && tool === 'a_gull') { g.globalAlpha = 0.7; drawGull(...P(hover.x + 0.5, hover.y + 0.5), null, time); g.globalAlpha = 1; }
+    if (r.ok && tool === 'a_darren') { g.globalAlpha = 0.7; const [sx, sy] = P(hover.x + 0.5, hover.y + 0.5); drawDarren(sx, sy, null, time); g.globalAlpha = 1; }
     if (r.ok && tool === 'a_moth') { g.globalAlpha = 0.7; const [sx, sy] = P(hover.x + 0.5, hover.y + 0.5); drawMoth(sx, sy, 26, null, time); g.globalAlpha = 1; }
   } else if (hover && inb(hover.x, hover.y)) {
     poly([P(hover.x, hover.y), P(hover.x + 1, hover.y), P(hover.x + 1, hover.y + 1), P(hover.x, hover.y + 1)], null, 'rgba(255,255,255,0.45)', 1.5);
   }
 
   // speech
-  for (const a of animals) if (a.sayT > 0) { const [sx, sy] = P(a.x, a.y, (a.sp === 'moth' ? a.z : 0) + 26); bubble(sx, sy, a.say, '#b3261e'); }
+  for (const a of animals) if (a.sayT > 0) { const [sx, sy] = P(a.x, a.y, (a.sp === 'moth' ? a.z : a.sp === 'darren' ? 16 : 0) + 26); bubble(sx, sy, a.say, a.sp === 'darren' ? '#1d4f9c' : '#b3261e'); }
   for (const gs of guests) if (gs.sayT > 0) { const [sx, sy] = P(gs.x, gs.y, 34); bubble(sx, sy, gs.say); }
   for (const f of floaters) {
     const [sx, sy] = P(f.x, f.y, f.z + (1.6 - f.t) * 20);
@@ -962,7 +1067,7 @@ function clampCam() {
 function pickEntity(px, py) {
   const [wx, wy] = toWorld(px, py);
   let best = null, bd = 18;
-  for (const a of animals) { const [sx, sy] = P(a.x, a.y, a.sp === 'moth' ? a.z : 10); const d = Math.hypot(sx - wx, sy - wy); if (d < bd) { bd = d; best = { kind: 'animal', ref: a }; } }
+  for (const a of animals) { const [sx, sy] = P(a.x, a.y, a.sp === 'moth' ? a.z : a.sp === 'darren' ? 18 : 10); const d = Math.hypot(sx - wx, sy - wy); if (d < bd) { bd = d; best = { kind: 'animal', ref: a }; } }
   for (const gs of guests) { const [sx, sy] = P(gs.x, gs.y, 16); const d = Math.hypot(sx - wx, sy - wy); if (d < bd) { bd = d; best = { kind: 'guest', ref: gs }; } }
   return best;
 }
@@ -1061,8 +1166,8 @@ function buildToolbar() {
 function drawIcon(cv, id) {
   g = cv.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
-  const big = { o_shelf: 0.62, o_desk: 0.95, o_dave: 0.95, o_lamp: 0.85, o_boxes: 0.95 }[id] || 1.25;
-  const lift = { o_shelf: 66, o_desk: 64, o_dave: 66, o_lamp: 70, o_boxes: 66 }[id] || 56;
+  const big = { o_shelf: 0.62, o_desk: 0.95, o_dave: 0.95, o_lamp: 0.85, o_boxes: 0.95, o_rack: 0.68, o_coffee: 1.0 }[id] || 1.25;
+  const lift = { o_shelf: 66, o_desk: 64, o_dave: 66, o_lamp: 70, o_boxes: 66, o_rack: 68, o_coffee: 64 }[id] || 56;
   g.setTransform(big * 2, 0, 0, big * 2, 56, (lift + 4));
   g.translate(0, -16 * 1);
   const tile = (col) => poly([P(0, 0), P(1, 0), P(1, 1), P(0, 1)], col);
@@ -1075,14 +1180,15 @@ function drawIcon(cv, id) {
     g.fillStyle = '#f2b632'; g.fillRect(12, 14, 22, 12); g.fillRect(20, 8, 10, 7);
     g.fillStyle = '#2a2e33'; g.beginPath(); g.arc(17, 29, 4, 0, 7); g.arc(30, 29, 4, 0, 7); g.fill();
     g.fillStyle = '#9aa3ad'; g.fillRect(34, 12, 4, 17);
-  } else if (id === 't_beach' || id === 't_dark') {
-    const save = terrain; terrain = [[id === 't_beach' ? T.BEACH : T.DARK]];
+  } else if (PAINT[id] !== undefined) {
+    const save = terrain; terrain = [[PAINT[id]]];
     g.setTransform(1.3, 0, 0, 1.3, 56, 22); drawTile(0, 0); terrain = save;
   } else if (id === 'a_gull') { g.setTransform(2.2, 0, 0, 2.2, 52, 74); drawGull(0, 0, null, 0); }
+  else if (id === 'a_darren') { g.setTransform(1.9, 0, 0, 1.9, 56, 80); drawDarren(0, 0, null, 0); }
   else if (id === 'a_moth') { g.setTransform(2.4, 0, 0, 2.4, 56, 70); drawMoth(0, 0, 12, null, 0.05); }
   else {
     const type = id.slice(2);
-    tile(OBJ[type].on === T.BEACH ? '#d8c28e' : OBJ[type].on === T.DARK ? '#2c2f3e' : '#6f87a3');
+    tile(['#6f87a3', '#d8c28e', '#2c2f3e', '#505b66'][OBJ[type].on]);
     drawObj({ type, x: 0, y: 0 });
   }
   g = mainCtx;
@@ -1109,7 +1215,7 @@ function renderInfo() {
   if (s.kind === 'animal') {
     const a = s.ref, sp = SPECIES[a.sp];
     h = close + '<h3>' + a.name + '</h3><div class="sp">' + sp.name + '</div>' +
-      barRow('Happiness', a.happy, moodCol(a.happy)) + barRow('Hunger', a.hunger, a.hunger > 70 ? '#ff7a6b' : '#a3b7d3') +
+      barRow('Happiness', a.happy, moodCol(a.happy)) + barRow(a.sp === 'darren' ? 'Coffee need' : 'Hunger', a.hunger, a.hunger > 70 ? '#ff7a6b' : '#a3b7d3') +
       '<div class="say">“' + (a.moodNote || '...') + '”</div>';
   } else if (s.kind === 'guest') {
     const gs = s.ref;
@@ -1119,16 +1225,17 @@ function renderInfo() {
   } else if (s.kind === 'obj') {
     const def = OBJ[s.ref.type];
     h = close + '<h3>' + def.name + '</h3><div class="sp">' + (def.food ? 'Animal care' : 'Scenery') + '</div><div>' +
-      (def.food ? (def.food === 'gull' ? 'Hungry seagulls come here for chips.' : 'Moths circle this when they need a light fix.') : 'Adds to the Test Bay atmosphere. Guests like it.') +
+      (def.food ? ({ gull: 'Hungry seagulls come here for chips.', moth: 'Moths circle this when they need a light fix.', darren: 'Darren comes here when his coffee need gets high.' })[def.food] : s.ref.type === 'rack' ? 'Lots of blinking lights. Nobody knows what half of them mean.' : 'Adds to the Test Bay atmosphere. Guests like it.') +
       '</div><div style="margin-top:6px;color:var(--muted)">Bulldoze for a ' + POUND + Math.floor(def.cost / 2) + ' refund.</div>';
   } else if (s.kind === 'habitat') {
     const info = s.ref; if (!compInfo.includes(info)) { closeInfo(); return; }
     const here = animals.filter(a => compAt(a.x, a.y) === info.id);
     const isBeach = info.terrain === T.BEACH;
-    h = close + '<h3>' + (isBeach ? 'Seagull Beach' : 'Moth Corner') + '</h3><div class="sp">Exhibit</div>' +
+    const foodName = ['', ' chip bin', ' strip light', ' coffee machine'][info.terrain];
+    h = close + '<h3>' + ['', 'Seagull Beach', 'Moth Corner', 'Wild Darren Exhibit'][info.terrain] + '</h3><div class="sp">Exhibit</div>' +
       '<div class="bar"><span>Size</span><span>' + info.tiles.length + ' tiles</span><span></span></div>' +
       '<div class="bar"><span>Residents</span><span>' + (here.map(a => a.name).join(', ') || 'none') + '</span><span></span></div>' +
-      '<div class="bar"><span>Food</span><span>' + (info.foods.length ? info.foods.length + (isBeach ? ' chip bin' : ' strip light') + (info.foods.length > 1 ? 's' : '') : '<span style="color:var(--danger)">missing</span>') + '</span><span></span></div>';
+      '<div class="bar"><span>Food</span><span>' + (info.foods.length ? info.foods.length + foodName + (info.foods.length > 1 ? 's' : '') : '<span style="color:var(--danger)">missing</span>') + '</span><span></span></div>';
   }
   elInfo.innerHTML = h;
   const cb = document.getElementById('infoClose'); if (cb) cb.onclick = closeInfo;
@@ -1202,7 +1309,7 @@ function start(data) {
   if (data && data.cam) Object.assign(cam, data.cam);
   window.addEventListener('resize', () => { resize(); clampCam(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { resize(); elTools.querySelectorAll('canvas').forEach((cv, i) => drawIcon(cv, TOOLS.flatMap(gp => gp.items)[i].id)); });
-  log('Test Bay Zoo is open. Steve and Gary are on the beach.', 'good');
+  log('Test Bay Zoo is open. Steve and Gary are on the beach, and Darren is in the server room.', 'good');
   if (!data || !data.terrain) {
     let seen = false; try { seen = localStorage.getItem('tbz-help') === '1'; } catch (e) {}
     if (!seen) { document.getElementById('help').hidden = false; try { localStorage.setItem('tbz-help', '1'); } catch (e) {} }
