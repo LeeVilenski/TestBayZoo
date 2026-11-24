@@ -135,7 +135,7 @@ button:focus-visible { outline: 2px solid var(--beak); outline-offset: 2px; }
       <li>Seagulls need a <b>Chip Bin</b>. Moths need a <b>Strip Light</b>. Give them room or they get grumpy.</li>
       <li>Guests come in through the fire exit, pay &pound;6 and wander to exhibits. Happy animals mean a better rating and more guests.</li>
       <li>Hungry seagulls with no chip bin will rob the guests.</li>
-      <li>The <b>Wild Darren</b> exhibit holds Test Bay&rsquo;s IT Technician. He lives on Server Room carpet and needs a <b>Coffee Machine</b>. There is only one Darren.</li>
+      <li>The <b>Wild Darren</b> exhibit holds Test Bay&rsquo;s IT Technician. He lives on Server Room carpet and needs a <b>Mayonnaise Dispenser</b>. There is only one Darren.</li>
       <li>Drag to pan (right-drag while painting), scroll or pinch to zoom, arrow keys/WASD also pan. Esc returns to Inspect.</li>
     </ul>
     <button id="helpClose">Open the zoo</button>
@@ -160,7 +160,7 @@ const OBJ = {
   dave:  { name: 'Mini Dave', cost: 30, on: T.FLOOR, block: true, decor: 6 },
   bin:   { name: 'Chip Bin', cost: 80, on: T.BEACH, block: false, food: 'gull' },
   lamp:  { name: 'Strip Light', cost: 50, on: T.DARK, block: false, food: 'moth' },
-  coffee: { name: 'Coffee Machine', cost: 90, on: T.IT, block: false, food: 'darren' },
+  mayo: { name: 'Mayonnaise Dispenser', cost: 90, on: T.IT, block: false, food: 'darren' },
   rack:  { name: 'Server Rack', cost: 150, on: T.IT, block: false, decor: 4 },
 };
 const SPECIES = {
@@ -168,7 +168,7 @@ const SPECIES = {
     names: ['Steve', 'Gary', 'Big Sandra', 'Kevin', 'Brenda', 'Chips', 'Wayne', 'Pam', 'Squawkins', 'Nigel'] },
   moth: { name: 'Moth', cost: 60, habitat: T.DARK, food: 'lamp', space: 2, upkeep: 1, hungerRate: 0.9, speed: 1.6,
     names: ['Dusty', 'Mothew', 'Cardigan', 'Lumen', 'Tim', 'Flick', 'Wool Thief', 'Bulb', 'Sheila', 'Fuzz'] },
-  darren: { name: 'IT Technician', cost: 400, habitat: T.IT, food: 'coffee', space: 6, upkeep: 5, hungerRate: 1.0, speed: 0.9, unique: true,
+  darren: { name: 'IT Technician', cost: 400, habitat: T.IT, food: 'mayo', space: 6, upkeep: 5, hungerRate: 1.0, speed: 0.9, unique: true,
     names: ['Darren'] },
 };
 const TOOLS = [
@@ -180,11 +180,11 @@ const TOOLS = [
   { group: 'Animals', items: [
     { id: 'a_gull', label: 'Seagull', cost: 150, desc: 'Place on Shingle Beach. Needs a Chip Bin and 4 tiles of space.' },
     { id: 'a_moth', label: 'Moth', cost: 60, desc: 'Place on Dark Corner. Needs a Strip Light and 2 tiles of space.' },
-    { id: 'a_darren', label: 'Wild Darren', cost: 400, desc: 'The only IT Technician in captivity. Place in a Server Room. Needs a Coffee Machine and 6 tiles of space.' } ] },
+    { id: 'a_darren', label: 'Wild Darren', cost: 400, desc: 'The only IT Technician in captivity. Place in a Server Room. Needs a Mayonnaise Dispenser and 6 tiles of space.' } ] },
   { group: 'Animal care', items: [
     { id: 'o_bin', label: 'Chip Bin', cost: 80, desc: 'Seagull food. Place on Shingle Beach. ' + POUND + '2 per feed.' },
     { id: 'o_lamp', label: 'Strip Light', cost: 50, desc: 'Moths circle it. Place on Dark Corner. ' + POUND + '1 per visit.' },
-    { id: 'o_coffee', label: 'Coffee Machine', cost: 90, desc: 'Darren fuel. Place in a Server Room. ' + POUND + '1 per cup.' } ] },
+    { id: 'o_mayo', label: 'Mayo Dispenser', cost: 90, desc: 'Darren fuel. Place in a Server Room. ' + POUND + '1 per squirt.' } ] },
   { group: 'Scenery', items: [
     { id: 'o_shelf', label: 'Shelving', cost: 120, desc: 'Racking full of boxes. Guests like a proper Test Bay look.' },
     { id: 'o_desk', label: 'Build Desk', cost: 100, desc: 'Desk with a monitor. Place on floor.' },
@@ -226,7 +226,7 @@ function newGame() {
   for (let x = 2; x <= 6; x++) for (let y = 10; y <= 14; y++) terrain[y][x] = T.DARK;
   for (let x = 15; x <= 19; x++) for (let y = 4; y <= 7; y++) terrain[y][x] = T.IT;
   setObj('bin', 16, 12); setObj('lamp', 4, 12);
-  setObj('coffee', 15, 4); setObj('rack', 18, 4); setObj('rack', 19, 4);
+  setObj('mayo', 15, 4); setObj('rack', 18, 4); setObj('rack', 19, 4);
   recompute();
   addAnimal('gull', 15, 11, 'Steve'); addAnimal('gull', 18, 13, 'Gary');
   addAnimal('moth', 3, 11, 'Dusty'); addAnimal('moth', 5, 13, 'Mothew'); addAnimal('moth', 3, 14, 'Cardigan');
@@ -345,8 +345,8 @@ function animalMood(a) {
   let target = 50;
   const notes = [];
   const isD = a.sp === 'darren';
-  if (n.food) target += 22; else notes.push(a.sp === 'gull' ? 'No chip bin. Eyeing the guests.' : isD ? 'No coffee machine. Running on fumes.' : 'No strip light. Bumping into monitors.');
-  if (a.hunger > 70) { target -= 25; notes.push(isD ? 'Desperately needs a coffee.' : 'Starving.'); }
+  if (n.food) target += 22; else notes.push(a.sp === 'gull' ? 'No chip bin. Eyeing the guests.' : isD ? 'No mayo dispenser. Everything tastes dry.' : 'No strip light. Bumping into monitors.');
+  if (a.hunger > 70) { target -= 25; notes.push(isD ? 'Desperately needs some mayo.' : 'Starving.'); }
   if (n.space >= sp.space) target += 15; else { target -= 30 * (1 - n.space / sp.space); notes.push('Too crowded in here.'); }
   if (n.friends > 0 || isD) target += 8; else notes.push('A bit lonely.');
   if (!notes.length && isD) notes.push(pick(['Enjoying the peace and quiet.', 'Nobody has raised a ticket in ages.', 'The server room is the right temperature.']));
@@ -383,7 +383,7 @@ function updateAnimal(a, dt) {
     if (stepPath(a, sp.speed * (a.sp === 'gull' && a.food ? 1.5 : 1), dt)) {
       if (a.food) {
         a.state = 'eat'; a.t = a.sp === 'gull' ? 3 : a.sp === 'darren' ? 4 : 5;
-        if (a.sp === 'darren') { a.say = pick(['Ahh, coffee.', 'Right. Now I can think.', 'Third one today.']); a.sayT = 2.4; }
+        if (a.sp === 'darren') { a.say = pick(['Ahh, mayonnaise.', 'Right. Now I can think.', 'Third squirt today.', 'Just a little bit more.']); a.sayT = 2.4; }
         a.hunger = 0; money -= a.sp === 'gull' ? 2 : 1;
         if (a.sp === 'gull' && Math.random() < 0.3) { a.say = pick(['MINE!', 'Chips!', 'Kyow!']); a.sayT = 2; }
         a.ang = Math.random() * 6.28;
@@ -517,12 +517,12 @@ function lookAt(gs) {
     const d = here[0];
     if (d.hunger > 60 && !info.foods.length && Math.random() < 0.6) {
       d.hunger = 10; d.say = 'I\u2019ll just borrow this.'; d.sayT = 2.5;
-      gs.happy = clamp(gs.happy - 20, 0, 100); gs.say = 'He drank my tea!'; gs.sayT = 3;
-      log('Darren drank a guest\u2019s tea. Build a Coffee Machine.', 'bad');
+      gs.happy = clamp(gs.happy - 20, 0, 100); gs.say = 'He mayo\u2019d my sandwich!'; gs.sayT = 3;
+      log('Darren raided a guest\u2019s sandwich for mayo. Build a Mayonnaise Dispenser.', 'bad');
       return;
     }
     if (Math.random() < 0.35) { d.say = pick(IT_LINES); d.sayT = 2.6; }
-    gs.say = avg > 60 ? pick(['A Darren in the wild!', 'Can he fix my laptop?', 'Look, he\u2019s rebooting something', 'So majestic']) : pick(['He looks like he needs a coffee', 'Is he OK?']);
+    gs.say = avg > 60 ? pick(['A Darren in the wild!', 'Can he fix my laptop?', 'Look, he\u2019s rebooting something', 'So majestic']) : pick(['He looks like he needs some mayo', 'Is he OK?']);
   } else {
     gs.say = avg > 60 ? pick(['So many moths!', 'They love that light', 'Strangely beautiful']) : pick(['Are those moths OK?', 'It’s just dark in there']);
   }
@@ -837,19 +837,25 @@ function drawRack(tx, ty) {
   }
   lineW(P(x0 + 0.06, fy, 4), P(x0 + 0.06, fy, 88), '#5d6672', 1.5);
 }
-function drawCoffee(tx, ty) {
+function drawMayo(tx, ty) {
   box(tx + 0.22, ty + 0.28, 0, 0.56, 0.44, 30, '#8a8f98');
-  box(tx + 0.3, ty + 0.34, 30, 0.4, 0.3, 28, '#25272b');
-  poly([P(tx + 0.36, ty + 0.64, 40), P(tx + 0.62, ty + 0.64, 40), P(tx + 0.62, ty + 0.64, 54), P(tx + 0.36, ty + 0.64, 54)], '#3c4048');
-  { const [sx, sy] = P(tx + 0.4, ty + 0.64, 50); ellipse(sx, sy, 1.6, 1.6, Math.sin(time * 3) > 0 ? '#ff4a3a' : '#7a1d16'); }
-  const [cx, cy] = P(tx + 0.5, ty + 0.66, 30);
-  cyl(cx, cy, 3.5, 6, '#f4f2ec');
-  g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1.2;
-  for (let i = 0; i < 2; i++) { const o = (time * 12 + i * 8) % 16; g.beginPath(); g.moveTo(cx - 1 + i * 2, cy - 8 - o); g.quadraticCurveTo(cx + 3 - i * 2, cy - 11 - o, cx - 1 + i * 2, cy - 14 - o); g.stroke(); }
-  textOnX('COFFEE', tx + 0.32, ty + 0.72, 22, 6, '#20242a');
+  const [cx, cy] = P(tx + 0.5, ty + 0.5, 30);
+  ellipse(cx, cy, 11, 5.5, '#70757e');
+  cyl(cx, cy, 9, 30, '#f6efd6');
+  g.fillStyle = '#f2c230'; g.fillRect(cx - 9, cy - 21, 18, 10);
+  g.font = '700 7px "Pixelify Sans", monospace'; g.fillStyle = '#8a2a1e'; g.textAlign = 'center'; g.fillText('MAYO', cx, cy - 13.5); g.textAlign = 'start';
+  cyl(cx, cy - 30, 5, 4, '#f4f4f0');
+  g.fillStyle = '#d9dde2'; g.fillRect(cx - 1.5, cy - 44, 3, 10);
+  const press = Math.max(0, Math.sin(time * 1.5)) * 2.5;
+  g.fillStyle = '#ffffff'; g.beginPath(); g.roundRect(cx - 6, cy - 48 + press, 12, 5, 2); g.fill();
+  g.fillStyle = '#d9dde2'; g.fillRect(cx + 4, cy - 46 + press, 9, 2.5);
+  const drip = (time * 0.8) % 1;
+  if (drip < 0.6) ellipse(cx + 12.5, cy - 42 + press + drip * 22, 1.6, 2.2, '#fbf3d2');
+  const [dx, dy] = P(tx + 0.72, ty + 0.66, 30);
+  ellipse(dx, dy, 5, 2.5, '#ffffff'); ellipse(dx, dy - 0.5, 3, 1.4, '#f7e9b8');
 }
 function drawObj(o) {
-  ({ shelf: drawShelf, desk: drawDesk, boxes: drawBoxes, dave: drawDave, bin: drawBin, lamp: drawLamp, rack: drawRack, coffee: drawCoffee })[o.type](o.x, o.y);
+  ({ shelf: drawShelf, desk: drawDesk, boxes: drawBoxes, dave: drawDave, bin: drawBin, lamp: drawLamp, rack: drawRack, mayo: drawMayo })[o.type](o.x, o.y);
 }
 
 function drawFence(ax, ay, bx, by, kind) {
@@ -902,7 +908,7 @@ function drawDarren(sx, sy, a, t) {
   g.beginPath(); g.moveTo(-5.4, -33); g.quadraticCurveTo(-3, -28, 2, -29.5); g.stroke();
   if (eating) {
     g.fillStyle = '#2b2f36'; g.fillRect(3, -27, 3, 5);
-    g.fillStyle = '#f4f2ec'; g.fillRect(4, -31, 4, 5); g.fillStyle = '#d8433a'; g.fillRect(4, -30, 4, 1.2);
+    g.fillStyle = '#f6efd6'; g.fillRect(4, -32, 4, 6); g.fillStyle = '#f2c230'; g.fillRect(4, -30, 4, 2); g.fillStyle = '#ffffff'; g.fillRect(5, -34, 2, 2);
   } else {
     g.fillStyle = '#2b2f36'; g.fillRect(3, -22, 4, 4);
     g.save(); g.translate(5, -21); g.transform(1, -0.35, 0, 1, 0, 0);
@@ -1166,8 +1172,8 @@ function buildToolbar() {
 function drawIcon(cv, id) {
   g = cv.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
-  const big = { o_shelf: 0.62, o_desk: 0.95, o_dave: 0.95, o_lamp: 0.85, o_boxes: 0.95, o_rack: 0.68, o_coffee: 1.0 }[id] || 1.25;
-  const lift = { o_shelf: 66, o_desk: 64, o_dave: 66, o_lamp: 70, o_boxes: 66, o_rack: 68, o_coffee: 64 }[id] || 56;
+  const big = { o_shelf: 0.62, o_desk: 0.95, o_dave: 0.95, o_lamp: 0.85, o_boxes: 0.95, o_rack: 0.68, o_mayo: 1.0 }[id] || 1.25;
+  const lift = { o_shelf: 66, o_desk: 64, o_dave: 66, o_lamp: 70, o_boxes: 66, o_rack: 68, o_mayo: 64 }[id] || 56;
   g.setTransform(big * 2, 0, 0, big * 2, 56, (lift + 4));
   g.translate(0, -16 * 1);
   const tile = (col) => poly([P(0, 0), P(1, 0), P(1, 1), P(0, 1)], col);
@@ -1215,7 +1221,7 @@ function renderInfo() {
   if (s.kind === 'animal') {
     const a = s.ref, sp = SPECIES[a.sp];
     h = close + '<h3>' + a.name + '</h3><div class="sp">' + sp.name + '</div>' +
-      barRow('Happiness', a.happy, moodCol(a.happy)) + barRow(a.sp === 'darren' ? 'Coffee need' : 'Hunger', a.hunger, a.hunger > 70 ? '#ff7a6b' : '#a3b7d3') +
+      barRow('Happiness', a.happy, moodCol(a.happy)) + barRow(a.sp === 'darren' ? 'Mayo need' : 'Hunger', a.hunger, a.hunger > 70 ? '#ff7a6b' : '#a3b7d3') +
       '<div class="say">“' + (a.moodNote || '...') + '”</div>';
   } else if (s.kind === 'guest') {
     const gs = s.ref;
@@ -1225,13 +1231,13 @@ function renderInfo() {
   } else if (s.kind === 'obj') {
     const def = OBJ[s.ref.type];
     h = close + '<h3>' + def.name + '</h3><div class="sp">' + (def.food ? 'Animal care' : 'Scenery') + '</div><div>' +
-      (def.food ? ({ gull: 'Hungry seagulls come here for chips.', moth: 'Moths circle this when they need a light fix.', darren: 'Darren comes here when his coffee need gets high.' })[def.food] : s.ref.type === 'rack' ? 'Lots of blinking lights. Nobody knows what half of them mean.' : 'Adds to the Test Bay atmosphere. Guests like it.') +
+      (def.food ? ({ gull: 'Hungry seagulls come here for chips.', moth: 'Moths circle this when they need a light fix.', darren: 'Darren comes here when his mayo need gets high.' })[def.food] : s.ref.type === 'rack' ? 'Lots of blinking lights. Nobody knows what half of them mean.' : 'Adds to the Test Bay atmosphere. Guests like it.') +
       '</div><div style="margin-top:6px;color:var(--muted)">Bulldoze for a ' + POUND + Math.floor(def.cost / 2) + ' refund.</div>';
   } else if (s.kind === 'habitat') {
     const info = s.ref; if (!compInfo.includes(info)) { closeInfo(); return; }
     const here = animals.filter(a => compAt(a.x, a.y) === info.id);
     const isBeach = info.terrain === T.BEACH;
-    const foodName = ['', ' chip bin', ' strip light', ' coffee machine'][info.terrain];
+    const foodName = ['', ' chip bin', ' strip light', ' mayo dispenser'][info.terrain];
     h = close + '<h3>' + ['', 'Seagull Beach', 'Moth Corner', 'Wild Darren Exhibit'][info.terrain] + '</h3><div class="sp">Exhibit</div>' +
       '<div class="bar"><span>Size</span><span>' + info.tiles.length + ' tiles</span><span></span></div>' +
       '<div class="bar"><span>Residents</span><span>' + (here.map(a => a.name).join(', ') || 'none') + '</span><span></span></div>' +
@@ -1299,7 +1305,7 @@ function start(data) {
   newGame();
   if (data && data.terrain && data.terrain.length === MH) {
     terrain = data.terrain; objs = grid(null);
-    data.objs.forEach((r, y) => r.forEach((t, x) => { if (t) setObj(t, x, y); }));
+    data.objs.forEach((r, y) => r.forEach((t, x) => { if (t) setObj(t === 'coffee' ? 'mayo' : t, x, y); }));
     money = data.money; day = data.day; dayT = data.dayT; rating = data.rating; guestHappyAvg = data.guestHappyAvg; nextId = data.nextId;
     recompute(); animals = [];
     for (const s of data.animals) { const a = addAnimal(s.sp, Math.floor(s.x), Math.floor(s.y), s.name); Object.assign(a, { x: s.x, y: s.y, hunger: s.hunger, happy: s.happy }); }
